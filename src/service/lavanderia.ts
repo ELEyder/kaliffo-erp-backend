@@ -459,7 +459,17 @@ export const _getLavanderiaPorLote = async (lote_id: number) => {
   try {
     const queryText = `
     SELECT
-      l.*, 
+      l.lavanderia_id,
+      l.lote_id,
+      l.corte_id,
+      l.cantidad_enviada,
+      l.cantidad_recibida,
+      l.talla,
+      l.estado,
+      l.precio_unidad,
+      l.lavanderia_asignada,
+      DATE_FORMAT(l.fecha_envio, '%d-%m-%Y') AS fecha_envio,
+      DATE_FORMAT(l.fecha_recepcion, '%d-%m-%Y') AS fecha_recepcion,
       c.nombre, 
       c.codigo, 
       (SELECT p.nombre FROM producto p WHERE p.producto_id = co.producto_id) AS producto_nombre

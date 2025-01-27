@@ -130,7 +130,7 @@ CREATE TABLE IF NOT EXISTS pago (
   montoPagado DECIMAL(10, 2) NOT NULL,
   montoFaltante DECIMAL(10, 2) NOT NULL,
   fecha DATE NOT NULL,
-  estado INT NOT NULL,
+  estado INT NOT NULL DEFAULT 1,
   trabajador_id INT NOT NULL,
   INDEX I_fecha (fecha),
   INDEX I_estado (estado),
@@ -235,21 +235,29 @@ CREATE TABLE IF NOT EXISTS envio (
   FOREIGN KEY (pedido_id) REFERENCES pedido(pedido_id) ON DELETE CASCADE
   INDEX I_pedido_id(pedido_id),
   INDEX I_estado (estado)
-);`;
+);`; 
 
 // Define la estructura de la tabla "almacen_tela"
 const almacen_tela = `
 CREATE TABLE IF NOT EXISTS almacen_tela (
   tela_id INT AUTO_INCREMENT PRIMARY KEY,
   tipo VARCHAR(15) NOT NULL,
-  metraje DECIMAL(10, 2) NOT NULL,
-  articulo INT NOT NULL,
-  empresa_compra VARCHAR(15) NOT NULL,
+  articulo VARCHAR(30) NOT NULL,
+  numero_rollo VARCHAR(15) NOT NULL,
+  pro_numero_rollo VARCHAR(30) NOT NULL,
+  grado CHAR(1) NOT NULL,
+  grupo CHAR(3) NOT NULL,
+  ancho_bruto DECIMAL(10,2) NOT NULL,
+  ancho_neto DECIMAL(10,2) NOT NULL,
+  metraje DECIMAL(10,2) NOT NULL,
+  empalme VARCHAR(25),
+  lote_id INT NOT NULL,
   estado INT DEFAULT 1,
-  fecha_compra DATE,
+  fecha_ingreso DATE,
+  fecha_salida DATE,
   INDEX I_tipo (tipo),
   INDEX I_articulo (articulo),
-  INDEX I_empresa_compra (empresa_compra),
+  INDEX I_grupo (grupo),
   INDEX I_estado (estado)
 );`;
 

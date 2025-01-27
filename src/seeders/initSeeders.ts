@@ -13,6 +13,6 @@ export const initSeeders = async () => {
   await createAlmacenes();
   await createProducto();
   await createUsuarios();
-  await createTelas();
+  // await createTelas();
   // await createLotes();
 };

@@ -167,11 +167,12 @@ export const activarProducto = async (req: Request, res: Response) => {
   }
 };
 
-// export const Imprimir = async (req: Request, res: Response) => {
-//   try {
-//     const response = await _imprimirCodigo(res);
-//   } catch (error) {
-//     console.log(error);
-//     handleHttp(res, "error_desactivarProducto", 500);
-//   }
-// };
+export const Imprimir = async (req: Request, res: Response) => {
+  const {lote_id} = req.params;
+  try {
+    const response = await _imprimirCodigo(res,lote_id);
+  } catch (error) {
+    console.log(error);
+    handleHttp(res, "error_desactivarProducto", 500);
+  }
+};

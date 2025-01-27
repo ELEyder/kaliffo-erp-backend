@@ -17,7 +17,23 @@ const queryGetTelas = `
 `;
 
 const queryGetTelaPorTipo = `
-  SELECT * FROM almacen_tela WHERE tipo = u_tipo AND estado = u_estado;
+    SELECT 
+    tipo,
+    articulo,
+    numero_rollo,
+    pro_numero_rollo,
+    grado,
+    grupo,
+    ancho_bruto,
+    ancho_neto,
+    metraje,
+    empalme,
+    DATE_FORMAT(fecha_ingreso, '%Y-%m-%d') AS fecha_ingreso,
+    DATE_FORMAT(fecha_salida, '%Y-%m-%d') AS fecha_salida
+  FROM 
+    almacen_tela
+  WHERE 
+    tipo = u_tipo AND estado = u_estado;
 `;
 
 const initProcedureGetTela = async () => {

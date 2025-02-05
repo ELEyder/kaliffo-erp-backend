@@ -99,3 +99,28 @@ export const _horasTrabajadas = async (
     status: 200,
   };
 };
+
+//delete de asistencias
+export const _deleteAsistencia = async (
+  horario_id: number
+) => {
+  const queryText = `
+    delete from horario where horario_id=?;
+  `;
+  const result = await query(queryText, [horario_id]);
+
+  if (!result.success) {
+    return {
+      message: result.error,
+      success: false,
+      status: result.status || 500,
+    };
+  }
+
+  return {
+    message: "Se elimino Exitosamente",
+    success: true,
+    status: 200,
+  };
+};
+

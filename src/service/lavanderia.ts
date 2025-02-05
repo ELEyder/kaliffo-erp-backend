@@ -300,6 +300,7 @@ export const _sgteEstadoLavanderiaPorLote = async (
 
     const resultados = [];
     let cantidadTotal = 0;
+    let index = 0;
 
     for (const detalle of detalles) {
       const lavanderia = lavanderias.find(
@@ -373,20 +374,46 @@ export const _sgteEstadoLavanderiaPorLote = async (
             [detalle.cantidad_recibida, fecha, detalle.lavanderia_id]
           );
 
-          if (updateLavanderia2.affectedRows > 0) {
-            const insertAcabado = await query(
-              `INSERT INTO taller_acabado (lote_id, lavanderia_id, color_id, talla, cantidad_enviada, fecha_inicio)
-                VALUES (?, ?, ?, ?, ?, ?)`,
-              [
-                lote_id,
-                lavanderia.lavanderia_id,
-                lavanderia.color_id,
-                lavanderia.talla,
-                detalle.cantidad_recibida,
-                fecha,
-              ]
+          index++;
+
+          if (index === detalles.length) {
+            let insertAcabado: any;
+            const datosFinales = await query(
+              `
+               SELECT 		
+         			  corte.producto_id,
+                      lavanderia.color_id, 
+                      lavanderia.talla, 
+                      SUM(lavanderia.cantidad_recibida) AS cantidad_recibida
+              FROM 
+                  lavanderia
+              INNER JOIN 
+              corte on lavanderia.corte_id = corte.corte_id
+              WHERE 
+                  lavanderia.lote_id = ?
+              GROUP BY 
+                  lavanderia.corte_id,
+                  lavanderia.color_id, 
+                  lavanderia.talla;
+              `,
+              [lote_id]
             );
 
+            for (const dato of datosFinales.data) {
+              console.log(dato)
+              insertAcabado = await query(
+                `INSERT INTO taller_acabado (lote_id, producto_id, color_id, talla, cantidad_enviada, fecha_inicio)
+                  VALUES (?, ?, ?, ?, ?, ?)`,
+                [
+                  lote_id,
+                  dato.producto_id,
+                  dato.color_id,
+                  dato.talla,
+                  dato.cantidad_recibida,
+                  fecha,
+                ]
+              );
+            }
             const updateLote = await query(
               "UPDATE lote SET estado = 3 where lote_id = ?",
               [lote_id]
@@ -404,7 +431,7 @@ export const _sgteEstadoLavanderiaPorLote = async (
           } else {
             resultados.push({
               lavanderia_id: detalle.lavanderia_id,
-              message: "No se pudo actualizar la lavandería al estado 3",
+              message: "Aun no esta en el ultimo item",
               success: false,
               status: 500,
             });
@@ -459,7 +486,17 @@ export const _getLavanderiaPorLote = async (lote_id: number) => {
   try {
     const queryText = `
     SELECT
-      l.*, 
+      l.lavanderia_id,
+      l.lote_id,
+      l.corte_id,
+      l.cantidad_enviada,
+      l.cantidad_recibida,
+      l.talla,
+      l.estado,
+      l.precio_unidad,
+      l.lavanderia_asignada,
+      DATE_FORMAT(l.fecha_envio, '%d-%m-%Y') AS fecha_envio,
+      DATE_FORMAT(l.fecha_recepcion, '%d-%m-%Y') AS fecha_recepcion,
       c.nombre, 
       c.codigo, 
       (SELECT p.nombre FROM producto p WHERE p.producto_id = co.producto_id) AS producto_nombre

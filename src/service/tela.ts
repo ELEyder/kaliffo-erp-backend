@@ -2,20 +2,40 @@ import { query } from "../util/query";
 
 // Función para crear una nueva entrada de 'tela' en la base de datos
 export const _createTela = async (tela: any) => {
-  const { tipo, metraje, articulo, empresa_compra, fecha_compra } = tela;
+  const {
+    tipo,
+    articulo,
+    numero_rollo,
+    pro_numero_rollo,
+    grado,
+    grupo,
+    ancho_bruto,
+    ancho_neto,
+    metraje,
+    empalme,
+    lote_id,
+    fecha_ingreso,
+  } = tela;
 
   // Consulta SQL para insertar un nuevo registro de 'tela' en la base de datos
   const queryText = `
-      INSERT INTO almacen_tela (tipo,metraje,articulo,empresa_compra,fecha_compra) 
-      VALUES (?, ?, ?, ?, ?)`;
+      INSERT INTO almacen_tela(tipo,articulo,numero_rollo,pro_numero_rollo,grado,grupo,ancho_bruto,ancho_neto,metraje,empalme,lote_id,fecha_ingreso) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
   // Ejecuta la consulta con los detalles de la tela proporcionados
   const result = await query(queryText, [
     tipo,
-    metraje,
     articulo,
-    empresa_compra,
-    fecha_compra,
+    numero_rollo,
+    pro_numero_rollo,
+    grado,
+    grupo,
+    ancho_bruto,
+    ancho_neto,
+    metraje,
+    empalme || null,
+    lote_id,
+    fecha_ingreso,
   ]);
 
   return {
@@ -125,6 +145,36 @@ export const _getTelas = async () => {
   }
 };
 
+// Función para obtener telas por id
+export const _getTelasID = async (tela_id:Number) => {
+  try {
+    const result = await query(`
+      SELECT almacen_tela.tela_id,almacen_tela.tipo,CONCAT(almacen_tela.pro_numero_rollo,"-",almacen_tela.lote_id) 
+      as codigo_tela,almacen_tela.metraje from almacen_tela where almacen_tela.tela_id=${tela_id} and almacen_tela.estado=1
+      `);
+
+      if(result.data.length === 0){
+        return {
+          success: false,
+          status: 404, // Estado 200 indica recuperación exitosa
+        };
+      }
+
+    return {
+      items: result.data[0], // Retorna la lista de telas obtenida del procedimiento
+      success: true,
+      status: 200, // Estado 200 indica recuperación exitosa
+    };
+  } catch (error) {
+    console.log(error);
+    return {
+      msg: error, // Retorna el mensaje de error si ocurre una excepción
+      success: false,
+      status: 500, // Estado 500 indica error en el servidor
+    };
+  }
+};
+
 // Función para obtener tela por su tipo y estado
 export const _getTelaPorTipo = async (tipo_tela: string, estado: number) => {
   try {
@@ -146,22 +196,78 @@ export const _getTelaPorTipo = async (tipo_tela: string, estado: number) => {
   }
 };
 
-// Función para obtener todos los proveedores únicos de telas
-export const _getEmpresas = async () => {
-  const queryText = `select a_t.empresa_compra from almacen_tela a_t group by a_t.empresa_compra;`;
-
+export const _imprimirCodigos = async (res: any, lote_id: number) => {
   try {
-    const result = await query(queryText, []);
-    return {
-      items: result.data, // Retorna la lista de proveedores únicos
-      success: true,
-      status: 200, // Estado 200 indica recuperación exitosa
-    };
+    const JsBarcode = require("jsbarcode");
+    const { createCanvas } = require("canvas");
+    const PDFDocument = require("pdfkit-table");
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="codigo_${lote_id}.pdf"`
+    );
+
+    const dataCodigos = await query(`
+      SELECT almacen_tela.tela_id,
+      CONCAT(almacen_tela.pro_numero_rollo,"-",almacen_tela.lote_id) 
+      as codigo_tela from almacen_tela WHERE
+      almacen_tela.lote_id=${lote_id}
+      `);
+
+    
+    const doc = new PDFDocument({
+      size: [100 * 2.83, 140 * 2.83],
+      margin: 0,
+    });
+    
+    doc.pipe(res);
+
+    let posX = 0;
+    let posY = 5;
+    const spaceX = 4;
+    const spaceY = 30;
+    const barcodeWidth = 140;
+    const barcodeHeight = 50;
+    const maxCodesPerPage = 10;
+
+    dataCodigos.data.forEach((item: any, i: number) => {
+
+      if (i > 0 && i % maxCodesPerPage === 0) {
+        doc.addPage();
+        posX = 0;
+        posY = 5;
+      }
+
+      const canvas = createCanvas(barcodeWidth, barcodeHeight);
+      JsBarcode(canvas, item.tela_id, {
+        format: "CODE128",
+        width: 2,
+        fontOptions: "bold",
+        fontSize: 20,
+        height: 100,
+        displayValue: false
+      });
+
+      const imgData = canvas.toBuffer("image/png");
+
+      doc.image(imgData, posX, posY, {
+        width: barcodeWidth,
+        height: barcodeHeight,
+      });
+
+      doc.fontSize(12).text(item.codigo_tela, posX, posY + barcodeHeight + 1,{
+        align:"center",
+        width:barcodeWidth
+      })
+
+      posX = (i + 1) % 2 === 0 ? 0 : posX + barcodeWidth + spaceX;
+      posY += (i + 1) % 2 === 0 ? barcodeHeight + spaceY : 0;
+    });
+
+    doc.end();
   } catch (error) {
-    return {
-      msg: "Error _getEmpresas", // Mensaje de error
-      success: false,
-      status: 500, // Estado 500 indica error en el servidor
-    };
+    console.log(error);
+    res.status(500).json({ msg: "Error al imprimir los códigos" });
   }
 };

@@ -15,9 +15,11 @@ LEFT JOIN
 LEFT JOIN 
   trabajador ON trabajador.tienda_id = tienda.tienda_id
 WHERE 
-	estado = true
+	estado = 1
 GROUP BY 
-  tienda.tienda, tienda.direccion, tienda.telefono;
+  tienda.tienda, tienda.direccion, tienda.telefono
+ORDER BY 
+	tienda.tienda_id ASC;
 `;
 
 const queryGetTienda = `

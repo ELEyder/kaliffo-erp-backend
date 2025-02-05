@@ -9,6 +9,8 @@ import {
   _getDetalleProducto,
   _getProducto,
   _getProductos,
+  _getProductosAlmacen,
+  _getProductoSimpleCodigo,
   _getProductosTienda,
   _getTallaProducto,
   _imprimirCodigo,
@@ -54,18 +56,18 @@ export const createProducto = async (req: Request, res: Response) => {
 
 export const getProductos = async (req: Request, res: Response) => {
   const tienda_id = req.query.tienda_id;
+  const almacen_id = req.query.almacen_id;
   const loose_id = req.query.loose_id;
   try {
-    console.log(tienda_id);
     let response;
 
     if (tienda_id) {
       response = await _getProductosTienda(Number(tienda_id));
-      console.log(tienda_id);
     } else if (loose_id) {
       response = await _loseProductos(Number(loose_id));
-      console.log(loose_id);
-    } else {
+    } else if (almacen_id){
+      response = await _getProductosAlmacen(Number(almacen_id))
+    }else {
       response = await _getProductos();
       console.log("NO HAY PARAM");
     }
@@ -118,6 +120,7 @@ export const getColoresProducto = async (req: Request, res: Response) => {
 export const getDetalleProducto = async (req: Request, res: Response) => {
   const { producto_id } = req.params;
   const tienda_id = req.query.tienda_id;
+  const almacen_id = req.query.almacen_id;
   const talla = req.query.talla as string;
   const tipo = req.query.tipo as string;
 
@@ -125,6 +128,7 @@ export const getDetalleProducto = async (req: Request, res: Response) => {
     const response = await _getDetalleProducto(
       Number(producto_id),
       Number(tienda_id),
+      Number(almacen_id),
       talla,
       tipo
     );
@@ -167,11 +171,29 @@ export const activarProducto = async (req: Request, res: Response) => {
   }
 };
 
-// export const Imprimir = async (req: Request, res: Response) => {
-//   try {
-//     const response = await _imprimirCodigo(res);
-//   } catch (error) {
-//     console.log(error);
-//     handleHttp(res, "error_desactivarProducto", 500);
-//   }
-// };
+export const Imprimir = async (req: Request, res: Response) => {
+  const {lote_id} = req.params;
+  try {
+    const response = await _imprimirCodigo(res,lote_id);
+  } catch (error) {
+    console.log(error);
+    handleHttp(res, "error_desactivarProducto", 500);
+  }
+};
+
+export const getProductoSimpleCodigo = async(req:Request,res:Response)=>{
+  const {codigo} = req.params;
+  const tienda_id = req.query.tienda_id;
+  const almacen_id = req.query.almacen_id;
+
+  try {
+    const response = await _getProductoSimpleCodigo(
+      codigo,
+      (tienda_id?"tienda_id":"almacen_id"),
+      (tienda_id?Number(tienda_id):Number(almacen_id))
+    );
+    res.status(response.status).json(response.items);
+  } catch (error) {
+    handleHttp(res, "error ", 500);
+  }
+}

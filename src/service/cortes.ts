@@ -159,9 +159,9 @@ export const _getCortes = async () => {
 };
 
 // Función para obtener los cortes asociados a un lote específico
-export const _getCortesPorLote = async (lote_id: number) => {
+export const _getCortesPorLote = async (lote_id: number, tipo: any) => {
   try {
-    const queryText = `
+    let queryText = `
     SELECT 
                 corte.estado, 
                 corte.corte_id, 
@@ -185,8 +185,11 @@ export const _getCortesPorLote = async (lote_id: number) => {
                 producto ON producto.producto_id = corte.producto_id
             WHERE 
                 corte.lote_id = ?
-                AND corte.estado != 0;
+                AND corte.estado != 0
     `;
+    if (tipo) {
+      queryText += " HAVING cantidad_restante > 0;";
+    }
     const result = await query(queryText, [lote_id]);
 
     return {
@@ -197,58 +200,6 @@ export const _getCortesPorLote = async (lote_id: number) => {
   } catch (error: any) {
     return {
       message: "Error al obtener los cortes.",
-      success: false,
-      error: error.message || error,
-      status: 500,
-    };
-  }
-};
-
-// Función para obtener los cortes asociados a un lote específico que aun no 
-//tengan la cantidad de lavanderia completa
-export const _getCortesPorLoteDiferido = async (lote_id: number) => {
-  try {
-    const queryText = `
-SELECT 
-    c.estado, 
-    c.corte_id, 
-    c.taller_id,
-    t.nombre AS taller,
-    p.nombre AS producto, 
-    c.cantidad_recibida,
-    c.talla,
-    CAST(
-        (c.cantidad_recibida - 
-         COALESCE(
-            (SELECT SUM(l.cantidad_enviada) 
-             FROM lavanderia l 
-             WHERE l.corte_id = c.corte_id), 
-            0)
-        ) AS SIGNED) AS cantidad_restante
-FROM 
-    corte c
-JOIN 
-    trabajador t ON c.taller_id = t.trabajador_id
-JOIN 
-    producto p ON p.producto_id = c.producto_id
-WHERE 
-    c.lote_id = ?
-    AND c.estado != 0
-HAVING 
-    cantidad_restante > 0;
-
-
-    `;
-    const result = await query(queryText, [lote_id]);
-
-    return {
-      items: result.data || [],
-      success: true,
-      status: 200,
-    };
-  } catch (error: any) {
-    return {
-      message: "Error al obtener los cortes diferido.",
       success: false,
       error: error.message || error,
       status: 500,

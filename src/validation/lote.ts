@@ -3,12 +3,12 @@ import { validateResult } from "../util/validation";
 import { NextFunction, Request, Response } from "express";
 
 export const ValidateCreateLote: any = [
-  check("tipo_tela")
+  check("rollos_tela")
     .exists()
-    .withMessage("EL campo 'tipo_tela' es obligatorio.")
+    .withMessage("EL campo 'rollos_tela' es obligatorio.")
     .not()
     .isEmpty()
-    .withMessage("El campo 'tipo_tela' no debe ser vacio."),
+    .withMessage("El campo 'rollos_tela' no debe ser vacio."),
   check("productos")
     .exists()
     .withMessage("EL campo 'productos' es obligatorio.")

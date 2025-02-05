@@ -9,12 +9,13 @@ import {
 import { Lote } from "../interface/lote";
 
 export const createLote = async (req: Request, res: Response) => {
-  const { tipo_tela, metraje, productos } = req.body;
+  const { rollos_tela, metraje, productos } = req.body;
   const lote: Lote = {
-    tipo_tela,
+    rollos_tela,
     metraje,
     productos,
   };
+  
 
   try {
     const response = await _createLote(lote);

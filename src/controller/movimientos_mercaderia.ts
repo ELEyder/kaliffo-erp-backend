@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { handleHttp } from "../util/error.handler";
-import { _createmovimientos_mercaderia, _getmovimientos_mercaderia } from "../service/movimientos_mercaderia";
+import { _createmovimientos_mercaderia, _createmovimientos_mercaderiaAT, _getmovimientos_mercaderia } from "../service/movimientos_mercaderia";
 
 export const getmovimientos_mercaderia = async (
   req: Request,
@@ -19,28 +19,14 @@ export const createmovimientos_mercaderia = async (
   req: Request,
   res: Response
 ) => {
-  const {
-    tienda_idO,
-    tienda_idD,
-    producto_id,
-    producto_Did,
-    talla,
-    cantidad,
-    fecha
-  }=req.body
-    
-    const movimiento:any = {
-        tienda_idD,
-        tienda_idO,
-        producto_id,
-        producto_Did,
-        talla,
-        cantidad,
-        fecha        
-    }
-
+  const tipo = req.query.tipo;
   try {
-    const response = await _createmovimientos_mercaderia(movimiento);
+    let response:any;
+    if(tipo==="AT"){
+      response = await _createmovimientos_mercaderiaAT(req.body);
+    }else if (tipo==="TT"){
+      response = await _createmovimientos_mercaderia(req.body);
+    }
     res.status(response.status).json(response.items);
   } catch (error) {
     handleHttp(res, "error_getUsuario", 500);

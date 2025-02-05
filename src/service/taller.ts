@@ -206,6 +206,7 @@ export const _sgteEstadoAcabadosPorLote = async (
 
     const resultados: any[] = [];
     let cantidadTotal = 0;
+    let index = 0;
 
     // Recorre los detalles de los acabados y procesa según su estado
     for (const detalle of detalles) {
@@ -222,6 +223,8 @@ export const _sgteEstadoAcabadosPorLote = async (
         });
         continue;
       }
+
+      index++;
 
       // Switch para procesar según el estado actual del acabado
       switch (acabado.estado) {
@@ -252,7 +255,7 @@ export const _sgteEstadoAcabadosPorLote = async (
             acabado.cantidad_enviada,
             resultados,
             cantidadTotal,
-            res
+            (index===detalles.length?true:false),
           );
           break;
 
@@ -341,7 +344,7 @@ const caso2 = async (
   cantidad_enviada: number,
   resultados: any[],
   cantidad_total: number,
-  res: any
+  final:boolean,
 ) => {
   console.log("============");
   console.log("Entro a la funcion caso 2");
@@ -378,14 +381,15 @@ const caso2 = async (
       ),
       query("UPDATE lote SET estado = 4 WHERE lote_id = ?", [lote_id]),
     ]);
-
-    if (updateAcabado.affectedRows > 0 && updateLote.affectedRows > 0) {
+  //que ejecute esto en el ultimo item 
+    if (final) {
+      console.log("estoy en el final UwU")
       const datos = await obtenerProductosTaller(lote_id); // Obtiene los productos asociados al lote
-      await procesoCrearProductos(datos, tienda_id, almacen_id, lote_id, res); // Crea los productos
+      await procesoCrearProductos(datos, tienda_id, almacen_id, lote_id); // Crea los productos
     } else {
       resultados.push({
         acabado_id,
-        message: "No se pudo actualizar el estado del acabado o del lote.",
+        message: "aun no esta en el ultimo :b",
         success: false,
         status: 500,
       });
@@ -406,16 +410,12 @@ async function obtenerProductosTaller(lote_id: string) {
   return await query(
     `
     SELECT 
-          c.producto_id,
+          ta.producto_id,
           ta.color_id,
           ta.cantidad_recibida as stock,
           ta.talla
       FROM 
           taller_acabado ta
-      INNER JOIN 
-          lavanderia l ON ta.lavanderia_id = l.lavanderia_id
-      INNER JOIN 
-          corte c ON l.corte_id = c.corte_id
       WHERE 
           ta.lote_id = ?
     `,
@@ -428,8 +428,7 @@ async function procesoCrearProductos(
   datos: any,
   tienda_id: string,
   almacen_id: string,
-  lote_id: string,
-  res: any
+  lote_id: string
 ) {
   const productosOrdenados = datos.data.reduce((acc: any, producto: any) => {
     const { producto_id, ...detalle } = producto;

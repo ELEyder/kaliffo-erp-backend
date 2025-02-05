@@ -28,9 +28,9 @@ export const _createLote = async (lote: Lote) => {
     // Insertar un nuevo lote en la base de datos
     const resultInsert = await query(
       `
-        INSERT INTO lote (codigo_lote, fecha_creacion, tipo_tela, metraje, productos)
+        INSERT INTO lote (codigo_lote, fecha_creacion, rollos_tela, metraje, productos)
         VALUES (?, ?, ?, ?, ?);`,
-      [codigo, fechaHoy, lote.tipo_tela, lote.metraje, lote.productos]
+      [codigo, fechaHoy, lote.rollos_tela, lote.metraje, lote.productos]
     );
 
     // Manejo de errores en la inserción
@@ -42,6 +42,8 @@ export const _createLote = async (lote: Lote) => {
         status: resultInsert.status || 500,
       };
     }
+
+    await query(`UPDATE almacen_tela set estado = 0 where tela_id in (${lote.rollos_tela})`, []);
 
     return {
       message: "Lote creado con éxito.",

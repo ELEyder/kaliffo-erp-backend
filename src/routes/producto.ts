@@ -7,11 +7,14 @@ import {
   getDetalleProducto,
   getProducto,
   getProductos,
+  getProductoSimpleCodigo,
   getTallaProducto,
+  Imprimir,
   updateProducto,
 } from "../controller/producto";
 import { ValidateCreateProducto } from "../validation/producto";
 import { validateToken } from "../middleware/validateToken";
+import { imprimirCodigos } from "../controller/telas";
 
 const router = Router();
 
@@ -29,6 +32,12 @@ router.get("/detalle/:producto_id", getDetalleProducto);
 
 // Obtener tallas de un producto usando el 'detalle_id'
 router.get("/talla/:detalle_id", getTallaProducto);
+
+//obtener codigos de barras
+router.get("/imprimir/:lote_id",Imprimir)
+
+//obtener producto detalle usando codigo de barras
+router.get("/codigo_simple/:codigo",getProductoSimpleCodigo)
 
 // Obtener colores disponibles para un producto usando el 'producto_id'
 router.get("/colores/:producto_id", getColoresProducto);

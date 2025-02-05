@@ -2,13 +2,18 @@ import { Router } from "express";
 import {
   createTela,
   desactivarTela,
-  getEmpresas,
   getTelaPorTipo,
   getTelas,
+  getTelasID,
   getTipos,
+  imprimirCodigos,
   updateTela,
 } from "../controller/telas";
 import { validateToken } from "../middleware/validateToken";
+
+const multer = require('multer');
+
+const upload = multer({dest:"uploads/"});
 
 const router = Router();
 
@@ -21,8 +26,8 @@ router.use(Validate);
 // Obtener los tipos de telas disponibles
 router.get("/tipo", getTipos);
 
-// Obtener las empresas asociadas a las telas
-router.get("/empresas", getEmpresas);
+//obtener telas por id 
+router.get("/codigos/:tela_id",getTelasID)
 
 // Obtener todas las telas
 router.get("", getTelas);
@@ -30,10 +35,13 @@ router.get("", getTelas);
 // Obtener las telas de un tipo específico
 router.get("/:tipo_tela", getTelaPorTipo);
 
+//obtener pdf con codigos de barras
+router.get("/imprimir/:lote_id",imprimirCodigos)
+
 // Rutas sin revisar
 
 // Crear una nueva tela
-router.post("/create", createTela);
+router.post("/create", upload.single("file"), createTela);
 
 // Actualizar los detalles de una tela existente usando su 'tela_id'
 router.put("/update/:tela_id", updateTela);

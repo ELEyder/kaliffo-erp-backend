@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { handleHttp } from "../util/error.handler";
 import {
   _createAlmacen_Productos,
+  _getAlmacen_producto,
   _getAlmacen_productos,
 } from "../service/almacen_producto";
 
@@ -31,5 +32,19 @@ export const getAlmacenProductos = async (req: Request, res: Response) => {
     handleHttp(res, "error_getAlmacen_productos", 500);
   }
 };
+
+
+export const getAlmacenProducto = async (req: Request, res: Response) => {
+  const {almacen_id} = req.params;
+  try {
+    const response = await _getAlmacen_producto(Number(almacen_id));
+    res
+      .status(response.status)
+      .json(response.items ? response.items : response);
+  } catch (error) {
+    handleHttp(res, "error_getAlmacen_productos", 500);
+  }
+};
+
 
 //get lavanderia cortes por producto

@@ -235,21 +235,29 @@ CREATE TABLE IF NOT EXISTS envio (
   FOREIGN KEY (pedido_id) REFERENCES pedido(pedido_id) ON DELETE CASCADE
   INDEX I_pedido_id(pedido_id),
   INDEX I_estado (estado)
-);`;
+);`; 
 
 // Define la estructura de la tabla "almacen_tela"
 const almacen_tela = `
 CREATE TABLE IF NOT EXISTS almacen_tela (
   tela_id INT AUTO_INCREMENT PRIMARY KEY,
   tipo VARCHAR(15) NOT NULL,
-  metraje DECIMAL(10, 2) NOT NULL,
-  articulo INT NOT NULL,
-  empresa_compra VARCHAR(15) NOT NULL,
+  articulo VARCHAR(30) NOT NULL,
+  numero_rollo VARCHAR(15) NOT NULL,
+  pro_numero_rollo VARCHAR(30) NOT NULL,
+  grado CHAR(1) NOT NULL,
+  grupo CHAR(3) NOT NULL,
+  ancho_bruto DECIMAL(10,2) NOT NULL,
+  ancho_neto DECIMAL(10,2) NOT NULL,
+  metraje DECIMAL(10,2) NOT NULL,
+  empalme VARCHAR(25),
+  lote_id INT NOT NULL,
   estado INT DEFAULT 1,
-  fecha_compra DATE,
+  fecha_ingreso DATE,
+  fecha_salida DATE,
   INDEX I_tipo (tipo),
   INDEX I_articulo (articulo),
-  INDEX I_empresa_compra (empresa_compra),
+  INDEX I_grupo (grupo),
   INDEX I_estado (estado)
 );`;
 
@@ -259,7 +267,7 @@ CREATE TABLE IF NOT EXISTS lote (
   lote_id INT AUTO_INCREMENT PRIMARY KEY,
   codigo_lote VARCHAR(50) UNIQUE,
   fecha_creacion DATE NOT NULL,
-  tipo_tela VARCHAR(20) NOT NULL,
+  rollos_tela VARCHAR(20) NOT NULL,
   metraje DECIMAL(10,2) NOT NULL,
   productos VARCHAR(150) NOT NULL,
   cantidad_total INT DEFAULT 0,
@@ -312,8 +320,8 @@ CREATE TABLE IF NOT EXISTS lavanderia (
 const taller_acabados = `
 CREATE TABLE IF NOT EXISTS taller_acabado (
   acabado_id INT AUTO_INCREMENT PRIMARY KEY,
-  lote_id INT NOT NULL,                
-  lavanderia_id INT NOT NULL,
+  lote_id INT NOT NULL,
+  producto_id INT NOT NULL,
   color_id INT NOT NULL,                
   talla VARCHAR(15) NOT NULL, 
   cantidad_recibida INT NOT NULL DEFAULT 0,
@@ -322,8 +330,8 @@ CREATE TABLE IF NOT EXISTS taller_acabado (
   fecha_inicio DATE,
   fecha_final DATE, 
   FOREIGN KEY (lote_id) REFERENCES lote(lote_id) ON DELETE CASCADE,
+  FOREIGN KEY (producto_id) REFERENCES producto(producto_id) ON DELETE CASCADE,
   FOREIGN KEY (color_id) REFERENCES color(color_id) ON DELETE CASCADE,
-  FOREIGN KEY (lavanderia_id) REFERENCES lavanderia(lavanderia_id) ON DELETE CASCADE,
   INDEX I_lote_id (lote_id),
   INDEX I_color_id (color_id),
   INDEX I_talla (talla),
@@ -345,7 +353,7 @@ CREATE TABLE IF NOT EXISTS almacen_producto (
 // Define la estructura de la tabla "movimientos_almacen_tienda"
 const movimientos_almacen_tienda = `
 CREATE TABLE IF NOT EXISTS movimientos_almacen_tienda (
-  movimiento_id INT PRIMARY KEY,
+  movimiento_id INT AUTO_INCREMENT PRIMARY KEY,
   codigo VARCHAR(20) NOT NULL UNIQUE, 
   almacen_origen INT NOT NULL,
   tienda_destino INT NOT NULL, 

@@ -13,6 +13,7 @@ import {
   _createCorteArray
 } from "../service/cortes";
 import { Corte } from "../interface/corte";
+import { emitWarning } from "process";
 
 export const createCorte = async (req: Request, res: Response) => {
   const { lote_id, taller_id, producto_id, cantidad_enviada, talla } = req.body;
@@ -40,6 +41,7 @@ export const createCorteArray = async (req: Request, res: Response) => {
   const corte = { detalles, producto_id };
 
   try {
+    console.log(req.body)
     const response = await _createCorteArray(corte, Number(lote_id));
     res.status(response.status).json(response);
   } catch (error) {

@@ -255,6 +255,24 @@ export const _getProductosTienda = async (tienda_id: number) => {
   };
 };
 
+export const _getProductosAlmacen = async (almacen_id: number) => {
+  const result = await query(
+    `SELECT producto.producto_id, producto.nombre,SUM(productodetalle.stock) as stock
+    FROM producto
+    INNER JOIN productodetalle
+    on producto.producto_id = productodetalle.producto_id
+    WHERE productodetalle.almacen_id=? AND producto.estado=1
+    GROUP BY producto.producto_id;`,
+    [almacen_id]
+  );
+
+  return {
+    items: result.data,
+    success: true,
+    status: 200,
+  };
+};
+
 // Función para actualizar los datos de un producto
 export const _updateProducto = async (producto: any) => {
   const { producto_id, nombre, stockTotal, precioBase, descuento } = producto;
@@ -364,13 +382,15 @@ export const _imprimirCodigo = async (res: any, lote_id: string) => {
 
     const dataCodigos: any = await query(`
         SELECT 
-          pt.codigo
-        FROM 
-            productotalla pt
-        INNER JOIN 
-            productodetalle pd ON pt.productoDetalle_id = pd.productoDetalle_id
-        WHERE 
-            pd.lote_id = ${lote_id};
+            p.nombre AS producto,
+            c.nombre AS color,
+            pt.talla,
+            pt.codigo
+        FROM productotalla pt
+        JOIN productodetalle pd ON pt.productoDetalle_id = pd.productoDetalle_id
+        JOIN producto p ON pd.producto_id = p.producto_id
+        JOIN color c ON pd.color_id = c.color_id
+        WHERE pd.lote_id = ${lote_id}
       `);
 
     const doc = new PDFDocument({
@@ -381,9 +401,9 @@ export const _imprimirCodigo = async (res: any, lote_id: string) => {
     doc.pipe(res);
 
     let posX = 0;
-    let posY = 5;
-    const spaceX = 4;
-    const spaceY = 20;
+    let posY = 15;
+    const spaceX = 8;
+    const spaceY = 19;
     const barcodeWidth = 140;
     const barcodeHeight = 60;
     const maxCodesPerPage = 10;
@@ -394,16 +414,16 @@ export const _imprimirCodigo = async (res: any, lote_id: string) => {
       if (i > 0 && i % maxCodesPerPage === 0) {
         doc.addPage();
         posX = 0;
-        posY = 5;
+        posY = 15;
       }
 
       const canvas = createCanvas(barcodeWidth, barcodeHeight);
       JsBarcode(canvas, codigo, {
         format: "CODE128",
-        width: 2,
+        width: 1.8,
         fontOptions: "bold",
-        fontSize: 20,
-        height: 100,
+        fontSize: 13,
+        height: 30,
       });
 
       const imgData = canvas.toBuffer("image/png");
@@ -412,6 +432,25 @@ export const _imprimirCodigo = async (res: any, lote_id: string) => {
         width: barcodeWidth,
         height: barcodeHeight,
       });
+
+      doc.fontSize(9).text(
+        "Producto: " + item.producto + "  Color: " + item.color,
+        posX + 5,
+        posY - 12, // Ubica el texto encima del código de barras
+        {
+          align: "left",
+          width: barcodeWidth - 30,
+        }
+      );
+
+      doc.circle(posX + barcodeWidth - 20, posY - 4, 10).stroke();
+
+      doc
+        .fontSize(12)
+        .text(item.talla, posX + barcodeWidth - 20 - 7, posY - 4 - 4, {
+          align: "center",
+          width: 14,
+        });
 
       posX = (i + 1) % 2 === 0 ? 0 : posX + barcodeWidth + spaceX;
       posY += (i + 1) % 2 === 0 ? barcodeHeight + spaceY : 0;
@@ -466,6 +505,7 @@ export const _getColoresProducto = async (producto_id: number) => {
 export const _getDetalleProducto = async (
   producto_id: number,
   tienda_id: number,
+  almacen_id: number,
   talla: string,
   tipo: string
 ) => {
@@ -482,15 +522,16 @@ export const _getDetalleProducto = async (
       `;
       params = [producto_id];
     } else if (tipo === "colores") {
-      queryS = `CALL SP_GetColoresProducto(?, ?);`;
-      params = [producto_id, tienda_id];
+      queryS = `CALL SP_GetColoresProducto(?, ?, ?);`;
+      params = [producto_id, tienda_id, almacen_id];
     } else if (tipo === "tallas") {
       if (talla) {
         queryS = `
-          select productodetalle.color_id,color.nombre,productodetalle.stock from productodetalle 
+          select productodetalle.productoDetalle_id,productodetalle.color_id,color.nombre,productodetalle.stock from productodetalle 
           INNER JOIN productotalla on productodetalle.productoDetalle_id = productotalla.productoDetalle_id 
           inner join color on productodetalle.color_id = color.color_id 
           where productodetalle.producto_id = ? AND productotalla.talla=?
+          group by productodetalle.productoDetalle_id
         `;
         params = [producto_id, talla];
       } else {
@@ -541,6 +582,58 @@ export const _getTallaProducto = async (detalle_id: number) => {
     console.log(consulta.data);
     return {
       items: consulta.data,
+      success: true,
+      status: 200,
+    };
+  } catch (error) {
+    console.log(error);
+    return {
+      message: error,
+      success: false,
+      status: 500,
+    };
+  }
+};
+
+export const _getProductoSimpleCodigo = async (
+  codigo: string,
+  tipo: string,
+  id: number
+) => {
+  try {
+    const columnasPermitidas = ["almacen_id", "tienda_id"]; // Ajusta según tus columnas
+    if (!columnasPermitidas.includes(tipo)) {
+      throw new Error("Columna no permitida");
+    }
+
+    const consulta = (await query(
+      `
+       SELECT 
+        pd.productoDetalle_id,
+        p.nombre AS producto_nombre,
+        p.producto_id,
+        pt.talla,
+        c.nombre,
+        pd.color_id
+      FROM 
+          productotalla pt
+      INNER JOIN 
+          productodetalle pd ON pt.productoDetalle_id = pd.productoDetalle_id
+      INNER JOIN 
+          producto p ON pd.producto_id = p.producto_id
+      INNER JOIN 
+      	color c on pd.color_id = c.color_id
+      WHERE 
+          pd.${tipo} = ? AND pt.codigo = ?
+      GROUP BY 
+      	pd.productoDetalle_id 
+
+      `,
+      [id, codigo]
+    )) as any;
+
+    return {
+      items: consulta.data[0],
       success: true,
       status: 200,
     };

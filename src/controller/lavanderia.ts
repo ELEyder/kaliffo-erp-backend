@@ -49,6 +49,7 @@ export const createLavanderiaArray = async (req: Request, res: Response) => {
   const { detalles } = req.body;
 
   try {
+    console.log(detalles)
     const response = await _createLavanderiaArray(lote_id, detalles);
     res.status(response.status).json(response);
   } catch (error) {

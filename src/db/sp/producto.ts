@@ -42,15 +42,21 @@ const queryGetColoresProducto = `
         INNER JOIN 
             color c ON pd.color_id = c.color_id
         WHERE 
-            pd.producto_id = ?
-    ';
+            pd.producto_id = ';
+
+    SET @consulta = CONCAT(@consulta, p_id);
     
     IF t_id IS NOT NULL AND t_id != '' THEN
         SET @consulta = CONCAT(@consulta, ' AND pd.tienda_id = ', t_id);
     END IF;
 
+    IF al_id IS NOT NULL AND al_id != '' THEN 
+      SET @consulta = CONCAT(@consulta, ' AND pd.almacen_id = ', al_id);
+    END IF;
+
+
     PREPARE stmt FROM @consulta;
-    EXECUTE stmt USING @p_id;
+    EXECUTE stmt;
     DEALLOCATE PREPARE stmt;
 `;
 // SP_GetColoresProducto
@@ -58,7 +64,7 @@ export const initProcedureGetColoresProductos = async () => {
   await createSp(
     "SP_GetColoresProducto",
     queryGetColoresProducto,
-    "IN p_id INT, IN t_id INT"
+    "IN p_id INT, IN t_id INT, IN al_id INT"
   );
 };
 

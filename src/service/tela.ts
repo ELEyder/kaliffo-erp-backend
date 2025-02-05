@@ -150,8 +150,15 @@ export const _getTelasID = async (tela_id:Number) => {
   try {
     const result = await query(`
       SELECT almacen_tela.tela_id,almacen_tela.tipo,CONCAT(almacen_tela.pro_numero_rollo,"-",almacen_tela.lote_id) 
-      as codigo_tela,almacen_tela.metraje from almacen_tela where almacen_tela.tela_id=${tela_id}
+      as codigo_tela,almacen_tela.metraje from almacen_tela where almacen_tela.tela_id=${tela_id} and almacen_tela.estado=1
       `);
+
+      if(result.data.length === 0){
+        return {
+          success: false,
+          status: 404, // Estado 200 indica recuperación exitosa
+        };
+      }
 
     return {
       items: result.data[0], // Retorna la lista de telas obtenida del procedimiento

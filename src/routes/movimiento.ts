@@ -19,6 +19,7 @@ router.get("/", getmovimientos_mercaderia);
 // Crear un nuevo movimiento de mercadería (por ejemplo, ingreso o egreso de productos)
 router.post("/create", createmovimientos_mercaderia);
 
+
 // Actualizar un movimiento de mercadería por su ID (ruta sin implementar)
 router.put("/update/:movimiento_id");
 

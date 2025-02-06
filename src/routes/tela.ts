@@ -26,17 +26,14 @@ router.use(Validate);
 // Obtener los tipos de telas disponibles
 router.get("/tipo", getTipos);
 
+//obtener pdf con codigos de barras
+router.get("/imprimir/:lote_id",imprimirCodigos)
+
 //obtener telas por id 
 router.get("/codigos/:tela_id",getTelasID)
 
 // Obtener todas las telas
 router.get("", getTelas);
-
-// Obtener las telas de un tipo específico
-router.get("/:tipo_tela", getTelaPorTipo);
-
-//obtener pdf con codigos de barras
-router.get("/imprimir/:lote_id",imprimirCodigos)
 
 // Rutas sin revisar
 
@@ -48,5 +45,8 @@ router.put("/update/:tela_id", updateTela);
 
 // Desactivar una tela específica utilizando su 'tela_id'
 router.put("/desactivar/:tela_id", desactivarTela);
+
+// Obtener las telas de un tipo específico
+router.get("/:tipo_tela", getTelaPorTipo);
 
 export { router };

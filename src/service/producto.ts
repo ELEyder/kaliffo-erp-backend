@@ -514,11 +514,18 @@ export const _getDetalleProducto = async (
     let params: Array<number | string>;
     if (tipo === "tiendas") {
       queryS = `
-      SELECT tienda.tienda_id, tienda.tienda, SUM(productodetalle.stock) as "STOCK"
-      FROM productodetalle
-      INNER JOIN tienda ON tienda.tienda_id = productodetalle.tienda_id
-      WHERE productodetalle.producto_id=?
-      GROUP BY tienda.tienda;
+          SELECT 
+              productodetalle.tienda_id,
+              tienda.tienda,
+               SUM(productodetalle.stock) as "STOCK"
+          FROM 
+              productodetalle
+          INNER JOIN 
+              tienda ON productodetalle.tienda_id = tienda.tienda_id
+          WHERE 
+              productodetalle.producto_id = ?
+          GROUP BY
+          	productodetalle.tienda_id
       `;
       params = [producto_id];
     } else if (tipo === "colores") {
@@ -630,6 +637,51 @@ export const _getProductoSimpleCodigo = async (
 
       `,
       [id, codigo]
+    )) as any;
+
+    return {
+      items: consulta.data[0],
+      success: true,
+      status: 200,
+    };
+  } catch (error) {
+    console.log(error);
+    return {
+      message: error,
+      success: false,
+      status: 500,
+    };
+  }
+};
+
+export const _getProductoCompletoCodigo = async (codigo: string) => {
+  try {
+    const consulta = (await query(
+      `
+      SELECT 
+        pd.productoDetalle_id,
+        p.nombre AS producto_nombre,
+        p.producto_id,
+        pt.talla,
+        c.nombre,
+        pd.color_id,
+        p.precioBase
+      FROM 
+          productotalla pt
+      INNER JOIN 
+          productodetalle pd ON pt.productoDetalle_id = pd.productoDetalle_id
+      INNER JOIN 
+          producto p ON pd.producto_id = p.producto_id
+      INNER JOIN 
+      	color c on pd.color_id = c.color_id
+      WHERE 
+      pt.codigo = ?
+      GROUP BY 
+      	pd.productoDetalle_id 
+      LIMIT 1;
+
+      `,
+      [codigo]
     )) as any;
 
     return {

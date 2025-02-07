@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   createVenta,
   desactivarVenta,
+  getDatosCliente,
   getVenta,
   getVentas,
 } from "../controller/venta";
@@ -11,12 +12,14 @@ const router = Router();
 
 // Middleware de validación de token (solo accesible por "administrador" o "venta")
 const Validate = validateToken(["administrador", "venta"]);
-router.use(Validate);
+router.use(Validate); 
 
 // Rutas revisadas:
 
 // Ruta para obtener todas las ventas. El controlador 'getVentas' maneja la lógica de esta ruta.
 router.get("", getVentas);
+
+router.get("/datos_cliente/:datos",getDatosCliente)
 
 // Ruta para obtener una venta específica por ID. El controlador 'getVenta' maneja la lógica de esta ruta.
 router.get("/:venta_id", getVenta);

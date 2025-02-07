@@ -1,33 +1,21 @@
 import { query } from "../util/query";
 
 // Función para obtener los movimientos de mercadería en función del ID de la tienda
-export const _getmovimientos_mercaderia = async (tienda_id: number) => {
+export const _getmovimientos_mercaderia = async () => {
   try {
-    let queryS: string;
-    let params: Array<number> = []; // Inicializa el array de parámetros
+    
 
-    // Si se proporciona un ID de tienda, buscamos los movimientos donde la tienda es origen o destino
-    if (tienda_id) {
-      queryS = `
-        SELECT * FROM movimientomercaderia
-        WHERE movimientomercaderia.tienda_idI = ? 
-        OR movimientomercaderia.tienda_idF = ?;
-      `;
-      params = [tienda_id, tienda_id];
-    } else {
-      // Si no se proporciona un ID de tienda, obtenemos todos los movimientos
-      queryS = `
-        SELECT * FROM movimientomercaderia;
-      `;
+    const cantidad_almacen_tienda =await query("select count(*) as cantidad from movimientos_almacen_tienda;", []); ;
+
+    const cantidad_movimientos_tienda_tienda= await query("select count(*) as cantidad from movimientos_tienda_tienda;",[]);
+
+    const result  = {
+      AT : cantidad_almacen_tienda.data[0].cantidad,
+      TT : cantidad_movimientos_tienda_tienda.data[0].cantidad
     }
 
-    // Imprime la consulta para depuración
-    console.log(queryS);
-
-    // Ejecutar la consulta y retornar los datos
-    const data = await query(queryS, params);
     return {
-      items: data.data,
+      items: result,
       success: true,
       status: 200,
     };
@@ -39,6 +27,132 @@ export const _getmovimientos_mercaderia = async (tienda_id: number) => {
     };
   }
 };
+
+// Función para obtener los movimientos de mercadería en función del ID de la tienda
+export const _getmovimientos_mercaderia_tipo = async (tipo:string) => {
+  try {
+
+    let queryS:any ;
+
+    if(tipo==="AT"){
+      queryS=`
+      SELECT 
+        mat.movimiento_id,
+        mat.codigo,
+        ap.nombre_almacen,
+        t.tienda,
+        mat.transporte,
+        DATE_FORMAT(mat.fecha_envio,'%d-%m-%Y') as fecha_envio,
+        DATE_FORMAT(mat.fecha_inicio_envio,'%d-%m-%Y') as fecha_inicio_envio
+    FROM 
+        movimientos_almacen_tienda AS mat
+    INNER JOIN 
+        almacen_producto AS ap ON mat.almacen_origen = ap.almacen_id
+    INNER JOIN 
+        tienda AS t ON mat.tienda_destino = t.tienda_id
+    WHERE 
+        mat.estado = 1
+    ORDER BY 
+        mat.fecha_envio DESC;
+      `
+    }else if (tipo==="TT"){
+      console.log("AUN NO")
+    }
+
+    const result = await query(queryS)
+
+    return {
+      items: result.data,
+      success: true,
+      status: 200,
+    };
+  } catch (error) {
+    return {
+      message: "ERROR AL OBTENER MOVIMIENTOS",
+      success: false,
+      status: 500,
+    };
+  }
+};
+
+export const _getMovimientoDetalle = async(movimiento_id:number,tipo:string)=>{
+  let queryC:any,queryD:any;
+
+  if(tipo==="AT"){
+    queryC=`
+      SELECT 
+        mat.movimiento_id,
+        mat.codigo,
+        ap.nombre_almacen,
+        t.tienda,
+        mat.transporte,
+        DATE_FORMAT(mat.fecha_envio,'%d-%m-%Y') as fecha_envio,
+        DATE_FORMAT(mat.fecha_inicio_envio,'%d-%m-%Y') as fecha_inicio_envio
+    FROM 
+        movimientos_almacen_tienda AS mat
+    INNER JOIN 
+        almacen_producto AS ap ON mat.almacen_origen = ap.almacen_id
+    INNER JOIN 
+        tienda AS t ON mat.tienda_destino = t.tienda_id
+    WHERE 
+        mat.movimiento_id=?
+    ORDER BY 
+        mat.fecha_envio DESC;
+      `
+
+    queryD=`
+      SELECT 
+        p.nombre AS producto_nombre, 
+        c.nombre AS color_nombre, 
+        matd.cantidad
+      FROM 
+          movimientos_almacen_tienda_detalle AS matd
+      INNER JOIN 
+          producto AS p ON matd.producto_id = p.producto_id
+      INNER JOIN 
+          color AS c ON matd.color_id = c.color_id
+      WHERE 
+          matd.movimiento_id = ?
+      ORDER BY 
+          p.nombre; 
+    `
+  }
+
+  try {
+
+    const [cabeceraResult,detalleResult] = await Promise.all([
+      query(queryC,[movimiento_id]),
+      query(queryD,[movimiento_id])
+    ])
+    
+    if (!cabeceraResult.success || !detalleResult.success) {
+      return {
+        message: cabeceraResult.error || detalleResult.error,
+        success: false,
+        status: cabeceraResult.status || detalleResult.status || 500,
+      };
+    }
+
+    const movimientoDetallado = {
+      cabecero:cabeceraResult.data[0],
+      detalle:detalleResult.data
+    }
+
+    return{
+      items:movimientoDetallado,
+      success:true,
+      status:200
+    }
+  } catch (error:any) {
+    return {
+      message: error.message,
+      success: false,
+      status: 500,
+    };
+  }
+
+}
+
 
 // Función para crear un nuevo movimiento de mercadería
 export const _createmovimientos_mercaderia = async (movimiento: any) => {
@@ -77,7 +191,7 @@ export const _createmovimientos_mercaderia = async (movimiento: any) => {
   }
 };
 
-// Función para crear un nuevo movimiento de mercadería
+// Función para crear un nuevo movimiento de mercadería de un almacen a una tienda
 export const _createmovimientos_mercaderiaAT = async (movimiento:any) => {
   try {
     // Obtener el último código de movimiento

@@ -8,6 +8,7 @@ import {
   _getColoresProducto,
   _getDetalleProducto,
   _getProducto,
+  _getProductoCompletoCodigo,
   _getProductos,
   _getProductosAlmacen,
   _getProductoSimpleCodigo,
@@ -197,3 +198,18 @@ export const getProductoSimpleCodigo = async(req:Request,res:Response)=>{
     handleHttp(res, "error ", 500);
   }
 }
+
+export const getProductoCompletoCodigo = async(req:Request,res:Response)=>{
+  const {codigo} = req.params;
+
+  try {
+    const response = await _getProductoCompletoCodigo(
+      codigo
+    );
+    res.status(response.status).json(response.items);
+  } catch (error) {
+    handleHttp(res, "error ", 500);
+  }
+}
+
+

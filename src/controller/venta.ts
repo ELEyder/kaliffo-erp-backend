@@ -3,6 +3,7 @@ import {
   _activarVenta,
   _createVenta,
   _desactivarVenta,
+  _getDatosCliente,
   _getVenta,
   _getVentas,
 } from "../service/venta";
@@ -10,39 +11,31 @@ import { handleHttp } from "../util/error.handler";
 
 export const createVenta = async (req: Request, res: Response) => {
   const {
-    codigo,
-    tipoVenta,
-    tipoComprobante,
-    fecha,
-    totalBruto,
-    totalIgv,
-    totalNeto,
+    tipo,
+    cantidad,
+    total_b,
+    total_igv,
+    total_N,
     tipoPago,
     dni,
     ruc,
     direccion,
-    telefono,
     nombre,
-    tienda_id,
-    detalles,
+    detalle
   } = req.body;
 
   const venta: any = {
-    codigo,
-    tipoVenta,
-    tipoComprobante,
-    fecha,
-    totalBruto,
-    totalIgv,
-    totalNeto,
+    tipo,
+    cantidad,
+    total_b,
+    total_igv,
+    total_N,
     tipoPago,
     dni,
     ruc,
     direccion,
-    telefono,
     nombre,
-    tienda_id,
-    detalles,
+    detalle
   };
 
   try {
@@ -66,9 +59,21 @@ export const getVentas = async (req: Request, res: Response) => {
   }
 };
 
+export const getDatosCliente = async(req:Request,res:Response)=>{
+  const {datos} = req.params;
+  const tipo = req.query.tipo as string;
+  try {
+    const response = await _getDatosCliente(tipo,Number(datos))
+    res
+      .status(response.status)
+      .json(response.items);
+  } catch (error) {
+    handleHttp(res, "error_getVentas");
+  }
+}
+
 export const getVenta = async (req: Request, res: Response) => {
   const { venta_id } = req.params;
-
   try {
     const response = await _getVenta(Number(venta_id));
     res.status(response.status).json(response.item ? response.item : response);

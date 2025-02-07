@@ -3,66 +3,70 @@ import { query } from "../util/query";
 // Función para crear una venta
 export const _createVenta = async (venta: any) => {
   const {
-    codigo,
-    tipoVenta,
-    tipoComprobante,
-    fecha,
-    totalBruto,
-    totalIgv,
-    totalNeto,
+    tipo,
+    cantidad,
+    total_b,
+    total_igv,
+    total_N,
     tipoPago,
     dni,
     ruc,
     direccion,
-    telefono,
     nombre,
-    tienda_id,
-    detalles,
+    detalle,
   } = venta;
 
-  // Verifica si el código de venta ya existe en la base de datos
-  const ventaExistente = (await query(`SELECT * FROM venta WHERE codigo = ?`, [
-    "FS-1",
-  ])) as any;
+  try {
+    if (cantidad > 10 && dni) {
+      return {
+        message: "Debe ser Factura no boleta.",
+        success: false,
+        status: 400, // Estado 400 indica que la solicitud tiene un error
+      };
+    }
+    // Verifica si el código de venta ya existe en la base de datos
+    const { data: Codigo } = await query(
+      `SELECT codigo FROM venta ORDER BY codigo DESC LIMIT 1`
+    );
 
-  if (ventaExistente.data.length !== 0) {
-    return {
-      message: "Este código de venta ya existe.",
-      success: false,
-      status: 400, // Estado 400 indica que la solicitud tiene un error
-    };
-  }
+    const codigo = Codigo.length
+      ? `V${tipo === "boleta" ? "B" : "F"}-${(
+          parseInt(Codigo[0].codigo.split("-")[1]) + 1
+        )
+          .toString()
+          .padStart(2, "0")}`
+      : `V${tipo === "boleta" ? "B" : "F"}-01`;
 
-  // Consulta SQL para insertar la venta en la base de datos
-  const queryTextVenta = `
+    // Fecha actual en formato YYYY-MM-DD
+    const fechaHoy = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+    // Consulta SQL para insertar la venta en la base de datos
+    const queryTextVenta = `
     INSERT INTO venta 
-    (codigo, tipoVenta, tipoComprobante, fecha, totalBruto, totalIgv, totalNeto, tipoPago, dni, ruc, direccion, telefono, nombre, tienda_id)
+    (codigo, tipoVenta, tipoComprobante, fecha, cantidad_total, totalBruto, totalIgv, totalNeto, tipoPago, dni, ruc, direccion, nombre, tienda_id)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  try {
     // Ejecuta la inserción de la venta
-    const resultVenta = await query(queryTextVenta, [
+    const { insertId: venta_id } = await query(queryTextVenta, [
       codigo,
-      tipoVenta,
-      tipoComprobante,
-      fecha,
-      totalBruto,
-      totalIgv,
-      totalNeto,
+      cantidad < 5 ? 1 : 2,
+      tipo === "boleta" ? 1 : 2,
+      fechaHoy,
+      cantidad,
+      total_b,
+      total_igv,
+      total_N,
       tipoPago,
-      dni,
-      ruc,
-      direccion,
-      telefono,
+      dni || null,
+      ruc || null,
+      direccion || null,
       nombre,
-      tienda_id,
+      null,
     ]);
 
-    const venta_id = resultVenta.insertId; // Obtiene el ID de la venta insertada
-
     // Llama a la función para crear los detalles de la venta
-    const detallesResult = await _createDetalleVenta(venta_id, detalles);
+    const detallesResult = await _createDetalleVenta(venta_id, detalle);
 
     if (!detallesResult.success) {
       return {
@@ -93,24 +97,33 @@ export const _createDetalleVenta = async (
   venta_id: number,
   detallesVenta: any[]
 ) => {
-  const queryText = `
-    INSERT INTO detalleVenta (venta_id, productoDetalle_id, codigo, cantidad, precioUnitario, precioNeto, igv)
-    VALUES (?, ?, ?, ?, ?, ?, ?)`; // Consulta SQL para insertar los detalles de la venta
-
   let errors: any[] = []; // Array para almacenar los errores de los detalles
-
   // Itera sobre cada detalle de la venta y lo inserta en la base de datos
-  for (let detalle of detallesVenta) {
+  for (const detalle of Object.values(detallesVenta) as any) {
     try {
-      await query(queryText, [
-        venta_id,
-        detalle.productoDetalle_id,
-        detalle.codigo,
-        detalle.cantidad,
-        detalle.precioUnitario,
-        detalle.precioNeto,
-        detalle.igv,
-      ]);
+      for (const d of detalle.detalles) {
+        await query(
+          `UPDATE productodetalle SET stock = stock - ? WHERE productoDetalle_id=?`,
+          [d.cantidad, d.detalle_id]
+        );
+        await query(
+          `DELETE FROM productotalla where productoDetalle_id = ? AND CODIGO=? LIMIT ?`,
+          [d.detalle_id, d.codigo, d.cantidad]
+        );
+      
+        // Insertar detalle de la venta
+        await query(
+          `INSERT INTO detalleventa (venta_id, productoDetalle_id, codigo, cantidad, precioUnitario)
+         VALUES (?, ?, ?, ?, ?)`,
+          [
+            venta_id,
+            d.detalle_id,
+            d.codigo,
+            detalle.cantidad,
+            detalle.precio
+          ]
+        );
+      }
     } catch (error: any) {
       console.error("Error al crear detalle de venta:", error);
       errors.push({
@@ -141,21 +154,17 @@ export const _getVentas = async (tipoComprobante?: number) => {
   try {
     let queryVentas = `
       SELECT 
-        v.*, 
-        t.tienda, 
-        SUM(dv.cantidad) AS cantidad
-      FROM venta v
-      JOIN tienda t ON t.tienda_id = v.tienda_id
-      JOIN detalleVenta dv ON dv.venta_id = v.venta_id
+      *
+      from venta 
     `;
 
     // Filtra por tipo de comprobante si se proporciona
     if (tipoComprobante) {
-      queryVentas += ` WHERE v.tipoComprobante = ?`;
+      queryVentas += ` WHERE venta.tipoComprobante = ?`;
     }
 
     queryVentas += `
-      GROUP BY v.venta_id, t.tienda;
+      GROUP BY venta.venta_id;
     `;
 
     const resultVentas = tipoComprobante
@@ -171,6 +180,35 @@ export const _getVentas = async (tipoComprobante?: number) => {
     console.error("Error al obtener las ventas:", error);
     return {
       message: "Error al obtener las ventas",
+      success: false,
+      status: 500, // Estado 500 indica un error en el servidor
+    };
+  }
+};
+
+export const _getDatosCliente = async (tipo: string, datos: number) => {
+  try {
+    const response = await fetch(`https://buscaruc.com/api/v1/${tipo}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        token:
+          "eyJ1c2VySWQiOjUwNzUsInVzZXJUb2tlbklkIjo1MDc1fQ.CMFZYJKPHyA3Bneg_ot8OuXFf-QqkKt-Zn5W7-OjV-mWK0RfIkDtnAcs93XnmNhqNx6B_9kb6tPlDnirkeI7H84RU20ZehVpjUNDqWJJoxWR3SrX4bvi7K27EdQaoUiYfDC-cWEO_NeIeUhmsPC7F0OMOWB2AXaA0F1__QShacM", // Asegúrate de que el token esté en tus variables de entorno
+        [tipo]: datos.toString(), // Esto será { ruc: "10178520739" } o { dni: "12345678" }
+      }),
+    });
+
+    const data = await response.json();
+    return {
+      items: data.result, // Retorna todas las ventas obtenidas
+      success: true,
+      status: 200, // Estado 200 indica que la recuperación fue exitosa
+    };
+  } catch (error) {
+    return {
+      message: "Error al obtener datos",
       success: false,
       status: 500, // Estado 500 indica un error en el servidor
     };
@@ -197,7 +235,22 @@ export const _getVenta = async (venta_id: number) => {
 
     // Consulta los detalles de la venta
     const queryDetalles = `
-      SELECT * FROM detalleVenta WHERE venta_id = ? 
+      SELECT 
+        CONCAT(p.nombre, ' ', c.nombre) AS nombre,
+          dv.codigo,
+          dv.cantidad,
+          dv.precioUnitario,
+          (dv.cantidad*dv.precioUnitario) as precioNeto
+      FROM 
+          detalleVenta dv
+      INNER JOIN 
+          productodetalle pd ON dv.productoDetalle_id = pd.productoDetalle_id
+      INNER JOIN 
+          producto p ON p.producto_id = pd.producto_id
+      INNER JOIN 
+          color c ON pd.color_id = c.color_id
+      WHERE 
+          dv.venta_id = ?;
     `;
     const resultDetalles = await query(queryDetalles, [venta_id]);
 

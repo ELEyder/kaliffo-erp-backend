@@ -6,6 +6,7 @@ import {
   getColoresProducto,
   getDetalleProducto,
   getProducto,
+  getProductoCompletoCodigo,
   getProductos,
   getProductoSimpleCodigo,
   getTallaProducto,
@@ -38,6 +39,9 @@ router.get("/imprimir/:lote_id",Imprimir)
 
 //obtener producto detalle usando codigo de barras
 router.get("/codigo_simple/:codigo",getProductoSimpleCodigo)
+
+//obtener producto detalle completo usando codigo de barras
+router.get("/codigo_completo/:codigo",getProductoCompletoCodigo)
 
 // Obtener colores disponibles para un producto usando el 'producto_id'
 router.get("/colores/:producto_id", getColoresProducto);

@@ -53,6 +53,7 @@ const queryGetTrabajadores = `
             trabajador.dni,
             trabajador.telefono,
             trabajador.tienda_id,
+            trabajador.fecha_nacimiento,
             tienda.tienda,
             trabajador.sueldo,
             IFNULL((SELECT COUNT(*) 

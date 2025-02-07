@@ -9,3 +9,6 @@ npm run type
 
 en otra terminal
 npm run dev
+
+en otra terminal
+wsl redis-server

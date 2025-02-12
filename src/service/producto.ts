@@ -1,4 +1,4 @@
-import redisClient from "../redis/redisClient";
+// import redisClient from "../redis/redisClient";
 import { createCodigoProductoTalla } from "../util/createCodigos";
 import { query } from "../util/query";
 
@@ -165,21 +165,49 @@ export const _createProductoDetalle = async (productoDetalle: any) => {
 };
 
 // Función para obtener productos desde la base de datos (con caché)
+// export const _getProductos = async () => {
+//   const cacheKey = "productos";
+
+//   try {
+//     const cachedProductos = await redisClient.get(cacheKey);
+//     if (cachedProductos) {
+//       console.log("Productos obtenidos de caché");
+//       return {
+//         items: JSON.parse(cachedProductos),
+//         success: true,
+//         status: 200,
+//       };
+//     }
+
+//     const queryText = `SELECT * FROM producto where estado=1`;
+//     const result = await query(queryText);
+
+//     if (!result.success) {
+//       return {
+//         message: result.error,
+//         success: false,
+//         status: result.status || 500,
+//       };
+//     }
+
+//     return {
+//       items: result.data,
+//       success: true,
+//       status: 200,
+//     };
+//   } catch (error) {
+//     console.log(error);
+//     return {
+//       message: "Error al obtener productos.",
+//       success: false,
+//       status: 500,
+//     };
+//   }
+// };
+
 export const _getProductos = async () => {
-  const cacheKey = "productos";
-
   try {
-    const cachedProductos = await redisClient.get(cacheKey);
-    if (cachedProductos) {
-      console.log("Productos obtenidos de caché");
-      return {
-        items: JSON.parse(cachedProductos),
-        success: true,
-        status: 200,
-      };
-    }
-
-    const queryText = `SELECT * FROM producto where estado=1`;
+    const queryText = `SELECT * FROM producto WHERE estado = 1`;
     const result = await query(queryText);
 
     if (!result.success) {

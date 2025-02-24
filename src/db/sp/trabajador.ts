@@ -47,7 +47,7 @@ const queryGetTrabajadores = `
     SET @consulta = '
         SELECT 
             trabajador.trabajador_id,
-            CONCAT(trabajador.nombre, ' ', trabajador.ap_paterno, ' ', trabajador.ap_materno) AS fullname,
+            CONCAT(trabajador.nombre, CHAR(32), trabajador.ap_paterno, CHAR(32), trabajador.ap_materno) AS nombres,
             trabajador.nombre, 
             trabajador.ap_paterno,
             trabajador.ap_materno,
@@ -93,7 +93,7 @@ const queryGetTrabajadores = `
 const queryGetTrabajador = `
 SELECT 
     trabajador.trabajador_id,
-    CONCAT(trabajador.nombre, ' ', trabajador.ap_paterno, ' ', trabajador.ap_materno) AS fullname,
+    CONCAT(trabajador.nombre, CHAR(32), trabajador.ap_paterno, CHAR(32), trabajador.ap_materno) AS nombres,
     trabajador.nombre, 
     trabajador.ap_paterno,
     trabajador.ap_materno,

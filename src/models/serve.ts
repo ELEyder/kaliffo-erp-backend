@@ -38,11 +38,16 @@ class Serve {
     this.app.use(express.json()); // Middleware para parsear JSON
     this.app.use(
       cors({
-        origin: "http://localhost:5173", // Permite solicitudes desde este origen
+        origin: ["http://localhost:5173", "https://eleyder.github.io", "https://qtr205tp-3000.brs.devtunnels.ms"],  // Permite solicitudes desde este origen
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         credentials: true, // Habilita el uso de credenciales (cookies, etc.)
-      })
+      },
+    )
     );
-
+    this.app.options("*", cors({
+      origin: ["http://localhost:5173", "https://eleyder.github.io", "https://qtr205tp-3000.brs.devtunnels.ms"],
+      credentials: true
+    }));
     this.app.use(cookieParser()); // Middleware para manejar cookies
     this.app.use(morgan("dev")); // Middleware para registrar solicitudes HTTP
   }

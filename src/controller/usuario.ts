@@ -10,8 +10,8 @@ export const login = async (req: Request, res: Response) => {
     res.cookie("token", response.token, {
       maxAge: 1000 * 6000 * 6000,
       httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      sameSite: "none",
+      secure: true
     });
     delete response.token;
     res.status(response.status).json(response);

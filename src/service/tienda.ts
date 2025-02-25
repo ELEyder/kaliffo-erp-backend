@@ -190,6 +190,8 @@ export const _updateTienda = async (tienda_id: number, tienda: any) => {
 // Función para generar un reporte PDF de la tienda
 export const _generarReporte = async (res: any, tienda_id: number) => {
   try {
+    console.log("Iniciando generación del reporte...");
+
     const PDFDocument = require("pdfkit-table");
 
     // Configura las cabeceras para generar el PDF
@@ -199,38 +201,35 @@ export const _generarReporte = async (res: any, tienda_id: number) => {
     const dataTienda: any = await query(
       `CALL SP_GetReporteTienda(${tienda_id})`
     );
+  // Procesa la información de los trabajadores
+  const tiendaData = dataTienda.data[0]; // Acceder al primer objeto de la respuesta
 
-    // Procesa la información de los trabajadores
-    const trabajadoresData =
-      dataTienda.data[0][0].usuarios_info != null
-        ? dataTienda.data[0][0].usuarios_info
-            .split("), (")
-            .map((item: string) => {
-              const [
-                usuario_id,
-                nombre,
-                apellido_p,
-                apellido_m,
-                telefono,
-                dni,
-                sueldo,
-              ] = item.replace(/\(|\)/g, "").trim().split(",");
-              return {
-                usuario_id: usuario_id,
-                nombre: nombre,
-                apellido_p: apellido_p,
-                apellido_m: apellido_m,
-                telefono: telefono,
-                dni: dni,
-                sueldo: sueldo,
-              };
-            })
-        : [];
+  const trabajadoresInfo = tiendaData[0].trabajadores_info;
+  let trabajadoresData;
+  if (trabajadoresInfo) {
+    trabajadoresData = trabajadoresInfo
+      .split("),") // Separar por cada trabajador
+      .map((item : string) => {
+        // Limpiar cada entrada y convertirla en un objeto
+        const datos = item.replace(/[()]/g, "").split(","); // Eliminar paréntesis y dividir por coma
+        return {
+          id: datos[0],
+          nombre: `${datos[1]} ${datos[2]} ${datos[3]}`, // Concatenar nombre completo
+          telefono: datos[4],
+          dni: datos[5],
+          sueldo: datos[6],
+        };
+      });
 
+    }
+    console.log("Trabajadores parseados:", trabajadoresData);
+
+    const productosInfo = tiendaData[0].productos_info;
+    let productosData;
     // Procesa la información de los productos
-    const productosData =
-      dataTienda.data[0][0].productos_info != null
-        ? dataTienda.data[0][0].productos_info
+  if (productosInfo) {
+
+    productosData = trabajadoresInfo
             .split("),(")
             .map((item: string) => {
               const [nombre_producto, color, lote, stock, talla, cantidad] =
@@ -256,7 +255,9 @@ export const _generarReporte = async (res: any, tienda_id: number) => {
               }
               return acc;
             }, [])
-        : [];
+    }
+
+    console.log("Productos parseados:", productosData);
 
     // Crea el documento PDF
     const doc = new PDFDocument({
@@ -282,6 +283,7 @@ export const _generarReporte = async (res: any, tienda_id: number) => {
     doc.font("Helvetica-Bold").fontSize(18).text("REPORTE DE TIENDA", 230, 75);
 
     // Configura la tabla de datos de la tienda
+    console.log("Configura la tabla de datos de la tienda")
     const tablaDatosTienda = {
       title: `Datos de ${dataTienda.data[0][0].tienda}`,
       headers: [
@@ -311,7 +313,7 @@ export const _generarReporte = async (res: any, tienda_id: number) => {
         },
         {
           label: "Trabajadores Totales",
-          property: "usuarios",
+          property: "trabajadores",
           headerAlign: "center",
           align: "center",
         },
@@ -323,13 +325,17 @@ export const _generarReporte = async (res: any, tienda_id: number) => {
           telefono: dataTienda.data[0][0].telefono,
           total_stock: dataTienda.data[0][0].total_stock
             ? dataTienda.data[0][0].total_stock
-            : null,
-          usuarios: dataTienda.data[0][0].usuarios
-            ? dataTienda.data[0][0].usuarios
-            : null,
+            : 0,
+            trabajadores: dataTienda.data[0][0].trabajadores
+            ? dataTienda.data[0][0].trabajadores
+            : 0,
         },
       ],
     };
+
+    // Agregar un log de las cabeceras para ver si no están nulas
+    console.log("Cabeceras de Datos de la tienda:", tablaDatosTienda.headers);
+    console.log("Data de Datos de la tienda:", tablaDatosTienda.datas);
 
     // Configura la tabla de datos de los trabajadores
     const tablaDatosTrabajadores = {
@@ -362,12 +368,7 @@ export const _generarReporte = async (res: any, tienda_id: number) => {
       ],
       datas: trabajadoresData.map((trabajador: any) => {
         return {
-          nombre_completo:
-            trabajador.nombre +
-            " " +
-            trabajador.apellido_p +
-            " " +
-            trabajador.apellido_m,
+          nombre_completo: trabajador.nombre,
           telefono: trabajador.telefono,
           dni: trabajador.dni,
           sueldo: trabajador.sueldo,
@@ -375,8 +376,19 @@ export const _generarReporte = async (res: any, tienda_id: number) => {
       }),
     };
 
+    // Agregar un log de las cabeceras de trabajadores
+    console.log("Cabeceras de Trabajadores:", tablaDatosTrabajadores.headers);
+
+    //CORRECTO
+    if (!trabajadoresData || productosData ) {
+      console.log("No se encontraron trabajadores para esta tienda.");
+      return res.status(404).send("No se encontraron trabajadores.");
+    }
+
     // Función para agregar tablas dinámicamente
     const nuevaTabla = async (tablaData: any, posY: number) => {
+      console.log("Agregando tabla..." + posY);
+      console.log(tablaData);
       const tablaAltura = await doc.table(tablaData, {
         width: 500,
         x: 55,
@@ -404,12 +416,11 @@ export const _generarReporte = async (res: any, tienda_id: number) => {
         },
       });
 
-      const nuevaY = posY + tablaAltura;
-
       if (tablaAltura + posY > doc.page.height - doc.page.margins.bottom) {
         doc.addPage();
       }
-
+      
+      console.log("Nueva Y:", tablaAltura + posY);
       return posY + tablaAltura;
     };
 
@@ -417,10 +428,13 @@ export const _generarReporte = async (res: any, tienda_id: number) => {
 
     // Agrega la tabla de datos de la tienda
     posY = await nuevaTabla(tablaDatosTienda, posY);
-
     // Agrega la tabla de trabajadores
     posY = await nuevaTabla(tablaDatosTrabajadores, posY);
 
+    console.log("Productos Data:", productosData);
+    if (productosData == undefined) {
+      return doc.end();
+    }
     // Agrega las tablas de productos
     for (const producto of productosData) {
       const tablaDatosProducto = {
@@ -457,24 +471,15 @@ export const _generarReporte = async (res: any, tienda_id: number) => {
             align: "center",
           },
         ],
-        datas: producto.detalle.map((detalle: any) => ({
-          color: detalle.color,
-          lote: detalle.lote,
-          stock: detalle.stock,
-          talla: detalle.talla,
-          cantidad: detalle.cantidad,
-        })),
+        datas: producto.detalle,
       };
 
       posY = await nuevaTabla(tablaDatosProducto, posY);
     }
 
     doc.end();
-  } catch (error) {
-    return {
-      message: error,
-      success: false,
-      status: 500,
-    };
+  } catch (error : any) {
+    console.error("Error al generar el reporte:", error);
+    throw new Error("Error al generar el reporte: " + error.message);
   }
 };

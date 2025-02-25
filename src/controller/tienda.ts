@@ -89,8 +89,9 @@ export const generateReporte = async (req: Request, res: Response) => {
   const { tienda_id } = req.params;
 
   try {
-    const response = await _generarReporte(res, Number(tienda_id));
-  } catch (error) {
-    handleHttp(res, "error_generarReporte", 500);
+    await _generarReporte(res, Number(tienda_id));
+  } catch (error : any) {
+    console.error("Error al generar el reporte:", error);
+    return res.status(500).json({ message: "Error al generar el reporte", error: error.message });
   }
 };

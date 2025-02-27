@@ -15,7 +15,7 @@ export const ValidateCreateIncidencia: any = [
     .custom(async (trabajador_id) => {
       if (trabajador_id) {
         const result = await query(
-          `SELECT * FROM usuario WHERE usuario_id = ?`,
+          `SELECT * FROM trabajador WHERE trabajador_id = ?`,
           [trabajador_id]
         );
 

@@ -56,6 +56,7 @@ const queryGetTrabajadores = `
             trabajador.tienda_id,
             trabajador.fecha_nacimiento,
             tienda.tienda,
+            trabajador.rol,
             trabajador.sueldo,
             IFNULL((SELECT COUNT(*) 
                     FROM incidencia 

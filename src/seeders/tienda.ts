@@ -3,6 +3,12 @@ import { query } from "../util/query";
 
 const tiendas: any = [
   {
+    tienda: "Sin Tienda",
+    direccion: "Sin dirección",
+    telefono: "123456789",
+    estado: 0
+  },
+  {
     tienda: "Tienda 1",
     direccion: "Av. Siempre Viva 123, Lima",
     telefono: "987654321",

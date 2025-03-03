@@ -3,17 +3,17 @@ import { query } from "../util/query";
 // Función para crear una nueva tienda
 export const _createTienda = async (tienda: any) => {
   const consulta = `
-    INSERT INTO tienda (tienda, direccion, telefono)
-    VALUES (?, ?, ?)
+    INSERT INTO tienda (tienda, direccion, telefono, estado)
+    VALUES (?, ?, ?, ?)
   `;
 
   try {
     const result = await query(consulta, [
-      tienda.tienda,
-      tienda.direccion,
-      tienda.telefono,
+      tienda.tienda ?? null,
+      tienda.direccion ?? null,
+      tienda.telefono ?? null,
+      tienda.estado ?? 1
     ]);
-
     return {
       message: "Tienda creada exitosamente.",
       data: result,

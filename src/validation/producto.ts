@@ -9,12 +9,6 @@ export const ValidateCreateProducto: any = [
     .not()
     .isEmpty()
     .withMessage("El campo 'nombre' no debe ser vacio."),
-  check("stockTotal")
-    .exists()
-    .withMessage("EL campo 'stockTotal' es obligatorio.")
-    .not()
-    .isEmpty()
-    .withMessage("El campo 'stockTotal' no debe ser vacio."),
   check("precioBase")
     .exists()
     .withMessage("EL campo 'precioBase' es obligatorio.")

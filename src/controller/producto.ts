@@ -21,7 +21,7 @@ import {
 import { handleHttp } from "../util/error.handler";
 
 export const createProducto = async (req: Request, res: Response) => {
-  const { nombre, stockTotal, precioBase, descuento, estado = 1 } = req.body;
+  const { nombre, stockTotal = 0, precioBase, descuento, estado = 1 } = req.body;
   try {
     const response = await _createProducto({
       nombre,

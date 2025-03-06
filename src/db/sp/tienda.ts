@@ -6,8 +6,8 @@ SELECT
   tienda.tienda,
   tienda.direccion,
   tienda.telefono,
-  SUM(productodetalle.stock) AS total_stock,
-  COUNT(DISTINCT trabajador.tienda_id) AS total_usuarios
+  COALESCE(SUM(productodetalle.stock), 0) AS stock,
+  COUNT(DISTINCT trabajador.tienda_id) AS usuarios
 FROM 
   tienda
 LEFT JOIN 

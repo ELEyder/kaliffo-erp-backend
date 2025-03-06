@@ -14,12 +14,7 @@ export const _createTienda = async (tienda: any) => {
       tienda.telefono ?? null,
       tienda.estado ?? 1
     ]);
-    return {
-      message: "Tienda creada exitosamente.",
-      data: result,
-      success: true,
-      status: 201,
-    };
+    return result;
   } catch (error) {
     console.error("Error al crear la tienda:", error);
     return {

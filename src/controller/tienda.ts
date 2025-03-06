@@ -21,7 +21,7 @@ export const createTienda = async (req: Request, res: Response) => {
 
   try {
     const response = await _createTienda(newTienda);
-    res.status(response.status).json(response);
+    res.status(response.status || 200).json(response);
   } catch (error) {
     handleHttp(res, "error_createTienda", 500);
   }

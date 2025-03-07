@@ -375,7 +375,7 @@ export const _generarReporte = async (
           align: "center",
         },
       ],
-      datas: horariodata.map((horario: any) => {
+      datas: horariodata?.map((horario: any) => {
         return {
           fecha: horario.fecha,
           horadeentrada: horario.hora_entrada,
@@ -438,7 +438,7 @@ export const _generarReporte = async (
           align: "center",
         },
       ],
-      datas: incidenciasData.map((incidencia: any) => {
+      datas: incidenciasData?.map((incidencia: any) => {
         return {
           tipo: incidencia.tipo,
           fecha: incidencia.fecha,

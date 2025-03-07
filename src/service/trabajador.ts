@@ -210,8 +210,15 @@ export const _deleteAsistencia = async (horario_id: number) => {
  * @param trabajador_id ID del trabajador.
  * @returns Resultado de la operación.
  */
-export const _generarReporte = async (res: any, trabajador_id: number,tipo:number) => {
-  const consultas = ["1=1",`'fecha BETWEEN DATE_FORMAT(CURRENT_DATE - INTERVAL 1 MONTH, "%Y-%m-01") AND LAST_DAY(CURRENT_DATE - INTERVAL 1 MONTH)'`]
+export const _generarReporte = async (
+  res: any,
+  trabajador_id: number,
+  tipo: number
+) => {
+  const consultas = [
+    "1=1",
+    `'fecha BETWEEN DATE_FORMAT(CURRENT_DATE - INTERVAL 1 MONTH, "%Y-%m-01") AND LAST_DAY(CURRENT_DATE - INTERVAL 1 MONTH)'`,
+  ];
   try {
     const PDFDocument = require("pdfkit-table");
 
@@ -221,7 +228,7 @@ export const _generarReporte = async (res: any, trabajador_id: number,tipo:numbe
 
     // Obtener datos del trabajador
     const dataUsuario: any = await query(
-      `CALL SP_ReporteTrabajador(${trabajador_id},${consultas[tipo-1]})`
+      `CALL SP_ReporteTrabajador(${trabajador_id},${consultas[tipo - 1]})`
     );
 
     // Procesar horarios, pagos e incidencias de la base de datos
@@ -335,7 +342,7 @@ export const _generarReporte = async (res: any, trabajador_id: number,tipo:numbe
             dataUsuario.data[0][0].ap_materno,
           telefono: dataUsuario.data[0][0].telefono,
           dni: dataUsuario.data[0][0].dni,
-          tienda: dataUsuario.data[0][0].tienda,
+          tienda: dataUsuario.data[0][0].tienda || "Sin Tienda",
         },
       ],
     };
@@ -400,7 +407,7 @@ export const _generarReporte = async (res: any, trabajador_id: number,tipo:numbe
           align: "center",
         },
       ],
-      datas: pagosData.map((pago: any) => {
+      datas: pagosData?.map((pago: any) => {
         return {
           fecha: pago.fecha,
           montoP: pago.pago_total,

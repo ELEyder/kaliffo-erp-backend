@@ -10,4 +10,8 @@ export interface Trabajador {
   sueldo: number;
   tienda_id?: number | null;
   rol: number;
+  tienda?: string;
+  horarios?: string;
+  pagos?: string;
+  incidencias?: string;
 }
